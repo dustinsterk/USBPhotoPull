@@ -1,0 +1,14 @@
+# Build output
+build/
+
+# macOS
+.DS_Store
+
+# Xcode / SwiftPM (if opened in Xcode later)
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+.swiftpm/
+DerivedData/
+
+# Python
+__pycache__/
