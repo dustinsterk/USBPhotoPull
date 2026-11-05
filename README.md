@@ -2,7 +2,7 @@
 
 # USBPhotoPull
 
-A small macOS app for copying photos and videos off an iPhone or iPad over USB into a folder you choose. Unlike Image Capture, it keeps the original dates on the copied files, handles Live Photos and edits properly, and can safely clear the phone afterwards.
+A small macOS app that replaces Image Capture and is for copying photos and videos off an iPhone or iPad over USB into a folder you choose.
 
 ## Features
 
@@ -29,8 +29,6 @@ A small macOS app for copying photos and videos off an iPhone or iPad over USB i
 ./build.sh install    # build and copy to /Applications
 ./build.sh universal  # Apple Silicon + Intel
 ```
-
-GitHub Actions builds it on every push to `main` (see `.github/workflows/build.yml`), and the zipped app is available under the run's **Artifacts**. Pushing a tag like `v1.0` also attaches it to a GitHub Release.
 
 The app is ad-hoc signed. To run it on another Mac, allow it once in **System Settings ▸ Privacy & Security ▸ Open Anyway**, or run `xattr -dr com.apple.quarantine /Applications/USBPhotoPull.app`.
 
