@@ -2,7 +2,7 @@
 
 # USBPhotoPull
 
-A small macOS app that replaces Image Capture and is for copying photos and videos off an iPhone or iPad over USB into a folder you choose.
+A small macOS app for copying photos and videos off an iPhone or iPad over USB into a folder you choose. Unlike Image Capture, it keeps the original dates on the copied files, handles Live Photos and edits properly, and can safely clear the phone afterwards.
 
 ## Features
 

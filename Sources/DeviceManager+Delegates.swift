@@ -95,13 +95,26 @@ extension DeviceManager: ICCameraDeviceDelegate {
 
     func cameraDevice(_ camera: ICCameraDevice, didRemove items: [ICCameraItem]) {
         guard camera === selectedCamera else { return }
-        let removed = Set(items.map { ObjectIdentifier($0) })
+        guard !items.isEmpty else { return }
+        // A large delete reports removals file by file; rebuilding the grid for each one made
+        // deletes look slow, so collect them and apply once things go quiet.
+        pendingRemovals.formUnion(items.map { ObjectIdentifier($0) })
+        removalFlush?.cancel()
+        let work = DispatchWorkItem { [weak self] in self?.applyPendingRemovals() }
+        removalFlush = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3, execute: work)
+    }
+
+    func applyPendingRemovals() {
+        let removed = pendingRemovals
+        pendingRemovals = []
         guard !removed.isEmpty else { return }
-        self.items.removeAll { removed.contains($0.id) }
+        let before = items.count
+        items.removeAll { removed.contains($0.id) }
         for id in removed { itemIndex[id] = nil }
         selection.subtract(removed)
-        recomputeViews()
-        deviceStatus = "\(self.items.count) items on \(camera.name ?? "device")"
+        if items.count != before { recomputeViews() }
+        deviceStatus = "\(items.count) items on \(selectedCamera?.name ?? "device")"
     }
 
     func cameraDevice(_ camera: ICCameraDevice, didReceiveThumbnail thumbnail: CGImage?, for item: ICCameraItem, error: Error?) {

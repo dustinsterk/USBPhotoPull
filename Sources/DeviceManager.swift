@@ -178,6 +178,10 @@ final class DeviceManager: NSObject, ObservableObject {
     var pendingDelete: (destination: URL, device: String, camera: ICCameraDevice, names: Set<String>)?
     /// (reason, file name) pairs the device reported while deleting.
     var deleteFailures: [(String, String)] = []
+    var deleteProgressTimer: Timer?
+    /// Files the device reported as removed, applied to the grid in one batch.
+    var pendingRemovals = Set<ObjectIdentifier>()
+    var removalFlush: DispatchWorkItem?
 
     // MARK: Preview cache (see DeviceManager+Preview)
     var previewCache: [ObjectIdentifier: URL] = [:]

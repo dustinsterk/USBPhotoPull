@@ -81,7 +81,8 @@ extension DeviceManager {
         pendingDelete = (destination: destination, device: device, camera: camera, names: names)
         deleteFailures = []
         DeviceLog.write("Delete requested: \(files.count) files for \(entries.count) items")
-        _ = camera.requestDeleteFiles(files, deleteFailed: { [weak self] failures in
+        let started = Date()
+        let progress = camera.requestDeleteFiles(files, deleteFailed: { [weak self] failures in
             let rows = failures.map { ("\($0.key.rawValue)", $0.value.name ?? "?") }
             DispatchQueue.main.async {
                 for (reason, name) in rows { DeviceLog.write("Delete refused: \(name) — \(reason)") }
@@ -94,10 +95,19 @@ extension DeviceManager {
             let deletedIDs = Set(deleted.map { ObjectIdentifier($0) })
             let deletedNames = Set(deleted.compactMap { $0.name })
             DispatchQueue.main.async {
-                DeviceLog.write("Delete finished: \(counts)\(error.map { " error: \($0.localizedDescription)" } ?? "")")
+                DeviceLog.write(String(format: "Delete finished in %.1f s: ", Date().timeIntervalSince(started))
+                                + counts + (error.map { " error: \($0.localizedDescription)" } ?? ""))
                 self?.deleteFinished(error: error, deletedIDs: deletedIDs, deletedNames: deletedNames)
             }
         })
+        deleteProgressTimer?.invalidate()
+        if let progress, files.count > 20 {
+            deleteProgressTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] timer in
+                guard let self, self.pendingDelete != nil else { timer.invalidate(); return }
+                let done = Int(progress.completedUnitCount), total = Int(max(progress.totalUnitCount, 1))
+                self.deviceStatus = "Deleting from device… \(min(done, total)) of \(total) files"
+            }
+        }
     }
 
     /// Review sheet: delete everything except the unticked items.
@@ -163,6 +173,7 @@ extension DeviceManager {
     func deleteFinished(error: Error?, deletedIDs: Set<ObjectIdentifier>, deletedNames: Set<String>) {
         guard let pending = pendingDelete else { return }
         pendingDelete = nil
+        deleteProgressTimer?.invalidate()
 
         let gone = pending.names.intersection(deletedNames)
         let notGone = pending.names.subtracting(deletedNames)
@@ -195,10 +206,10 @@ extension DeviceManager {
 
         // Take deleted files out of the grid now (the device's own listing can lag behind).
         if !deletedIDs.isEmpty {
-            items.removeAll { deletedIDs.contains($0.id) }
-            for id in deletedIDs { itemIndex[id] = nil }
-            selection.subtract(deletedIDs)
-            recomputeViews()
+            removalFlush?.cancel()
+            pendingRemovals.formUnion(deletedIDs)
+            applyPendingRemovals()
+        } else {
             deviceStatus = "\(items.count) items on \(selectedCamera?.name ?? "device")"
         }
     }
